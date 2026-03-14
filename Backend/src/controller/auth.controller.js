@@ -2,6 +2,12 @@ import jwt from "jsonwebtoken";
 import userModel from "../models/user.model.js";
 import { sendEmail } from "../services/mail.service.js";
 
+/**
+ * @desc Register a new user
+ * @route POST /auth/register
+ * @access Public
+ * @body { email: string, password: string, name: string }
+ */
 export async function register(req, res) {
   const { username, email, password } = req.body;
 
@@ -53,6 +59,12 @@ export async function register(req, res) {
   }
 }
 
+/**
+ * @desc Verify user email
+ * @route GET /auth/verify-email
+ * @access Public
+ * @query { token: string }
+ */
 export async function verifyEmail(req, res) {
   const { token } = req.query;
 
@@ -79,6 +91,103 @@ export async function verifyEmail(req, res) {
   } catch (error) {
     return res.status(400).json({
       message: "Invalid or expired token",
+      success: false,
+      err: error.message,
+    });
+  }
+}
+
+/**
+ * @desc Login user and return JWT token
+ * @route POST /auth/login
+ * @access Public
+ * @body { email: string, password: string }
+ */
+export async function login(req, res) {
+  const { email, password } = req.body;
+  try {
+    const user = await userModel.findOne({ email }).select("+password");
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+        success: false,
+        err: "User not found",
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+        success: false,
+        err: "Incorrect password",
+      });
+    }
+
+    if (!user.verified) {
+      return res.status(400).json({
+        message: "Email not verified",
+        success: false,
+        err: "Please verify your email",
+      });
+    } else {
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "7d",
+      });
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: false,
+      });
+
+      return res.json({
+        message: "Login successful",
+        success: true,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+        },
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      success: false,
+      err: error.message,
+    });
+  }
+}
+
+/**
+ * @desc Get current user info
+ * @route GET /auth/me
+ * @access Private
+ */
+export async function getMe(req, res) {
+  const userId = req.user.id;
+
+  try {
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        success: false,
+        err: "User not found",
+      });
+    }
+
+    return res.json({
+      message: "User info retrieved successfully",
+      success: true,
+      user: { user },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
       success: false,
       err: error.message,
     });
