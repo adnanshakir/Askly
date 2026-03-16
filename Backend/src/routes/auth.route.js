@@ -37,6 +37,6 @@ authRouter.get("/verify-email", verifyEmail);
  * @desc Get current logged in user
  * @access Private
  */
-authRouter.get("/me",authUser, getMe);
+authRouter.get("/me", authUser, getMe);
 
 export default authRouter;
