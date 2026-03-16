@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useSelector } from "react-redux";
 
 const Login = () => {
   const { handleLogin } = useAuth();
@@ -10,6 +11,13 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  const user = useSelector((state) => state.auth.user);
+  const loading = useSelector((state) => state.auth.loading);
+
+  if (user && !loading) {
+    return <Navigate to="/" replace />;
+}
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
