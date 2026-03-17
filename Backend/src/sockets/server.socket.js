@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 
 let io;
+
 export const initSocketServer = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
