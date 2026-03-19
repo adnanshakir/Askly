@@ -28,7 +28,6 @@ const Login = () => {
 
   await handleLogin(formData);
   navigate("/");
-  console.log("Login data:", formData);
 };
 
   return (

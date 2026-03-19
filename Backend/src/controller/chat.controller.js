@@ -33,7 +33,7 @@ export async function sendMessage(req, res) {
     role: "user",
   });
 
-  const messages = await messageModel.find({ chat: chat._id });
+  const messages = await messageModel.find({ chat: chat._id || chatId});
   // .sort({ createdAt: 1 });
 
   const result = await generateResponse(messages);
