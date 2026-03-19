@@ -62,6 +62,17 @@ const chatSlice = createSlice({
 
       existingChat.messages.push(buildMessage(message));
     },
+    setChatMessages(state, action) {
+      const { chatId, messages } = action.payload ?? {};
+      if (!chatId) return;
+
+      const existingChat = state.chats.find((chat) => chat.id === chatId);
+      if (!existingChat) return;
+
+      existingChat.messages = Array.isArray(messages)
+        ? messages.map((message) => buildMessage(message))
+        : [];
+    },
     setLoading(state, action) {
       state.isLoading = Boolean(action.payload);
     },
@@ -76,6 +87,7 @@ export const {
   setCurrentChat,
   createChat,
   addMessage,
+  setChatMessages,
   setLoading,
   setError,
 } = chatSlice.actions;

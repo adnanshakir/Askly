@@ -7,7 +7,7 @@ const api = axios.create({
 
 export const sendMessage = async ({ chatId, message }) => {
   try {
-    const response = await api.post("/message", { chatId, message });
+    const response = await api.post("/message", { chat: chatId, message });
     return response.data;
   } catch (error) {
     console.error("sendMessage failed", error);
