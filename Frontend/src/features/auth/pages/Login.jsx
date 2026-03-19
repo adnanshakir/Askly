@@ -33,7 +33,7 @@ const Login = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-(--bg) flex items-center justify-center px-4">
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-        <div className="absolute w-150 h-150 rounded-full bg-linear-to-br from-(--brand-start) to-(--brand-end) opacity-[0.06] blur-[80px]" />
+        <div className="absolute w-150 h-150 rounded-full bg-(--accent) opacity-[0.06] blur-[80px]" />
         <div
           className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[24px_24px] opacity-40"
           style={{
@@ -45,7 +45,7 @@ const Login = () => {
         />
       </div>
 
-      <div className="relative z-10 w-full max-w-105 rounded-2xl border border-(--border) bg-(--card) p-8 shadow-(--shadow-glow) backdrop-blur-md animate-fade-in">
+      <div className="relative z-10 w-full max-w-105 rounded-2xl border border-(--border) bg-(--card) p-8 backdrop-blur-md animate-fade-in">
         <div className="mb-8">
           <h1 className="text-3xl font-semibold text-(--text) title-font">
             Sign in
@@ -65,7 +65,7 @@ const Login = () => {
               onChange={handleChange}
               placeholder="name@example.com"
               required
-              className="w-full rounded-lg border border-(--border) bg-(--input) px-4 py-2.5 text-(--text) outline-none transition-all placeholder:text-(--text-secondary) placeholder:opacity-50 hover:border-(--border) focus:border-(--brand-start) focus:ring-1 focus:ring-(--brand-start)"
+              className="w-full rounded-lg border border-(--border) bg-(--input) px-4 py-2.5 text-(--text) outline-none transition-all placeholder:text-(--text-secondary) placeholder:opacity-50 hover:border-(--border) focus:border-(--accent) focus:ring-1 focus:ring-(--accent)"
             />
           </div>
 
@@ -83,7 +83,7 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
-                className="w-full rounded-lg border border-(--border) bg-(--input) pl-4 pr-10 py-2.5 text-(--text) outline-none transition-all placeholder:text-(--text-secondary) placeholder:opacity-50 hover:border-(--border) focus:border-(--brand-start) focus:ring-1 focus:ring-(--brand-start)"
+                className="w-full rounded-lg border border-(--border) bg-(--input) pl-4 pr-10 py-2.5 text-(--text) outline-none transition-all placeholder:text-(--text-secondary) placeholder:opacity-50 hover:border-(--border) focus:border-(--accent) focus:ring-1 focus:ring-(--accent)"
               />
               <button
                 type="button"
@@ -133,7 +133,7 @@ const Login = () => {
 
           <button
             type="submit"
-            className="mt-6 w-full rounded-lg bg-linear-to-r from-(--brand-start) to-(--brand-end) py-2.5 text-sm font-medium text-white shadow-[0_2px_10px_rgba(229,9,20,0.2)] transition-all hover:brightness-110 hover:shadow-[0_4px_15px_rgba(229,9,20,0.3)] focus:outline-none focus:ring-2 focus:ring-(--brand-start)"
+            className="mt-6 w-full rounded-lg bg-(--accent) py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-(--accent)"
           >
             Sign in
           </button>
@@ -143,7 +143,7 @@ const Login = () => {
           Don&apos;t have an account?{" "}
           <Link
             to="/register"
-            className="font-medium text-(--brand-start) transition-colors hover:text-(--brand-end)"
+            className="font-medium text-(--accent) transition-opacity hover:opacity-90"
           >
             Create account
           </Link>

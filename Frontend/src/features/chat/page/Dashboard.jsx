@@ -35,6 +35,11 @@ const Dashboard = () => {
     chat.selectChat(chatId);
   }
 
+  function handleNewChat() {
+    chat.startNewChat();
+    setIsMobileOpen(false);
+  }
+
   return (
     <main className="relative flex h-screen w-full overflow-hidden bg-(--bg) text-(--text)">
       <Sidebar
@@ -42,22 +47,28 @@ const Dashboard = () => {
         activeChatId={currentChatId}
         isDesktopCollapsed={isDesktopCollapsed}
         isMobileOpen={isMobileOpen}
+        onNewChat={handleNewChat}
         onSelectChat={handleSelectChat}
         onToggleDesktop={() => setIsDesktopCollapsed((prev) => !prev)}
         onCloseMobile={() => setIsMobileOpen(false)}
         onLogout={() => {}}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div className="sticky top-0 z-20 flex h-14 items-center justify-between bg-(--bg)/80 px-4 backdrop-blur md:px-6">
-          <button
-            type="button"
-            onClick={() => setIsMobileOpen(true)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-(--text-secondary) transition-colors hover:bg-(--surface-glow) hover:text-(--text) md:hidden"
-            aria-label="Open sidebar"
-          >
-            <Menu size={18} />
-          </button>
+          <div className="flex items-center gap-3 md:hidden">
+            <button
+              type="button"
+              onClick={() => setIsMobileOpen(true)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-(--text-secondary) transition-colors hover:bg-(--surface-glow) hover:text-(--text)"
+              aria-label="Open sidebar"
+            >
+              <Menu size={18} />
+            </button>
+            <span className="text-sm font-semibold tracking-wide text-(--text)">
+              Askly
+            </span>
+          </div>
 
           <div className="hidden md:block" />
 

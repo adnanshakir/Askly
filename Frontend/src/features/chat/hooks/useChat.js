@@ -177,12 +177,23 @@ export const useChat = () => {
     }
   }
 
+  function startNewChat() {
+    dispatch(
+      createChat({
+        id: `chat-${Date.now()}`,
+        title: "New Chat",
+      })
+    );
+    dispatch(setError(null));
+  }
+
   return {
     chats,
     currentChatId,
     initializeSocketConnection,
     loadChats,
     selectChat,
+    startNewChat,
     sendMessage: sendCurrentMessage,
   }
 };

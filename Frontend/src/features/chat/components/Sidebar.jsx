@@ -11,6 +11,7 @@ const Sidebar = ({
   activeChatId,
   isDesktopCollapsed,
   isMobileOpen,
+  onNewChat,
   onSelectChat,
   onToggleDesktop,
   onCloseMobile,
@@ -22,7 +23,7 @@ const Sidebar = ({
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex h-full flex-col bg-(--card) shadow-(--shadow-glow) transition-all duration-300 ease-out md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex h-full flex-col border-r border-(--border)/40 bg-(--card)/80 backdrop-blur-md transition-all duration-300 ease-out md:static md:translate-x-0 ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         } ${isDesktopCollapsed ? "md:w-14" : "md:w-72"} w-72`}
       >
@@ -41,7 +42,7 @@ const Sidebar = ({
           <>
             <div className="relative flex items-center px-4 py-4">
               <div className="flex min-w-0 items-center gap-2">
-                <span className="truncate text-sm font-semibold tracking-wide text-(--text)">
+                <span className="hidden truncate text-sm font-semibold tracking-wide text-(--text) md:inline">
                   Askly
                 </span>
               </div>
@@ -66,6 +67,17 @@ const Sidebar = ({
             </div>
 
             <div className="px-4 pb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onNewChat?.();
+                  onCloseMobile();
+                }}
+                className="mb-3 w-full rounded-xl bg-(--accent) px-3 py-2 text-sm text-white transition-opacity hover:opacity-90"
+              >
+                + New Chat
+              </button>
+
               <p className="text-xs font-medium uppercase tracking-wide text-(--text-secondary)">
                 Your Chats
               </p>
@@ -110,7 +122,7 @@ const Sidebar = ({
               <button
                 type="button"
                 onClick={onLogout}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-(--brand-start) to-(--brand-end) px-3 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-(--accent) px-3 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
               >
                 <LogOut size={16} />
                 <span>Logout</span>

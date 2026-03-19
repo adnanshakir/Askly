@@ -1,26 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0f0f10;
-  --card: #18181b;
-  --border: #27272a;
-  --text: #e4e4e7;
-  --text-secondary: #a1a1aa;
-  --input: #1c1c1f;
+  --bg: #151412;
+  --card: #1f1e1c;
+  --border: #34322e;
 
-  --accent: #7c82ff;
-  --brand-start: #7c82ff;
-  --brand-end: #5b5fff;
+  --text: #e8e6e3;
+  --text-secondary: #99958f;
+  --input: #262522;
 
-  --surface-glow: rgba(124, 130, 255, 0.08);
+  --accent: #3b82f6;
 
-  --shadow-glow: 0 10px 35px rgba(0, 0, 0, 0.35);
+  --surface-glow: rgba(209, 193, 157, 0.05);
+
+  --shadow-glow: 0 8px 30px rgba(0, 0, 0, 0.5);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   margin: 0;
 }
 
@@ -41,4 +43,28 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.25s ease-out forwards;
+}
+
+/* ===== Scrollbar (modern, subtle) ===== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.25);
 }
