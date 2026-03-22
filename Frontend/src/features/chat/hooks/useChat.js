@@ -39,10 +39,12 @@ export const useChat = () => {
       const rawChats = Array.isArray(data)
         ? data
         : Array.isArray(data?.chats)
-        ? data.chats
-        : [];
+          ? data.chats
+          : [];
 
-      const normalizedChats = rawChats.map((chat, index) => normalizeChat(chat, index));
+      const normalizedChats = rawChats.map((chat, index) =>
+        normalizeChat(chat, index),
+      );
       dispatch(setChats(normalizedChats));
 
       if (normalizedChats.length > 0) {
@@ -51,14 +53,16 @@ export const useChat = () => {
         const rawMessages = Array.isArray(messageData)
           ? messageData
           : Array.isArray(messageData?.messages)
-          ? messageData.messages
-          : [];
+            ? messageData.messages
+            : [];
 
         dispatch(
           setChatMessages({
             chatId: firstChatId,
-            messages: rawMessages.map((message) => normalizeMessage(message, "assistant")),
-          })
+            messages: rawMessages.map((message) =>
+              normalizeMessage(message, "assistant"),
+            ),
+          }),
         );
       }
     } catch (error) {
@@ -79,14 +83,16 @@ export const useChat = () => {
       const rawMessages = Array.isArray(data)
         ? data
         : Array.isArray(data?.messages)
-        ? data.messages
-        : [];
+          ? data.messages
+          : [];
 
       dispatch(
         setChatMessages({
           chatId,
-          messages: rawMessages.map((message) => normalizeMessage(message, "assistant")),
-        })
+          messages: rawMessages.map((message) =>
+            normalizeMessage(message, "assistant"),
+          ),
+        }),
       );
     } catch (error) {
       dispatch(setError(error?.message ?? "Unable to load messages"));
@@ -97,94 +103,54 @@ export const useChat = () => {
     const cleanMessage = messageText?.trim();
     if (!cleanMessage) return;
 
+    dispatch(setLoading(true));
     dispatch(setError(null));
 
-    let chatId = currentChatId;
-    const userMessage = {
-      id: `user-${Date.now()}`,
-      content: cleanMessage,
-      sender: "user",
-    };
-
-    if (chatId) {
-      dispatch(
-        addMessage({
-          chatId,
-          message: userMessage,
-        })
-      );
-    }
-
-    dispatch(setLoading(true));
     try {
-      const data = await sendMessage({ chatId, message: cleanMessage });
+      const data = await sendMessage({
+        chatId: currentChatId || null,
+        message: cleanMessage,
+      });
 
-      const serverChat = data?.chat ?? null;
-      const serverChatId = serverChat?._id ?? serverChat?.id ?? chatId;
+      const serverChat = data.chat;
+      const serverChatId = serverChat._id;
 
-      if (!chatId && serverChatId) {
+      // create chat if new
+      if (!currentChatId) {
         dispatch(
           createChat({
             id: serverChatId,
-            title: serverChat?.title ?? (cleanMessage.slice(0, 24) || "New Chat"),
-          })
-        );
-
-        dispatch(
-          addMessage({
-            chatId: serverChatId,
-            message: userMessage,
-          })
+            title: serverChat.title,
+          }),
         );
       }
 
-      chatId = serverChatId;
+      // always set active chat
+      dispatch(setCurrentChat(serverChatId));
 
-      const aiCandidate =
-        data?.aiMessage ??
-        data?.message ??
-        data?.data?.aiMessage ??
-        null;
-
-      const aiReply = aiCandidate
-        ? normalizeMessage(aiCandidate, "assistant")
-        : {
-            id: `ai-${Date.now()}`,
-            content: "I could not generate a response right now.",
-            sender: "assistant",
-          };
+      // reload messages fresh from backend (NO manual add)
+      const messageData = await getMessages(serverChatId);
 
       dispatch(
-        addMessage({
-          chatId,
-          message: aiReply,
-        })
+        setChatMessages({
+          chatId: serverChatId,
+          messages: messageData.messages.map((m) => ({
+            id: m._id,
+            content: m.content,
+            sender: m.role === "user" ? "user" : "assistant",
+          })),
+        }),
       );
     } catch (error) {
-      dispatch(setError(error?.message ?? "Failed to send message"));
-      dispatch(
-        addMessage({
-          chatId,
-          message: {
-            id: `ai-${Date.now()}`,
-            content: "Something went wrong while contacting the server.",
-            sender: "assistant",
-          },
-        })
-      );
+      console.error(error);
+      dispatch(setError("Failed to send message"));
     } finally {
       dispatch(setLoading(false));
     }
   }
 
   function startNewChat() {
-    dispatch(
-      createChat({
-        id: `chat-${Date.now()}`,
-        title: "New Chat",
-      })
-    );
-    dispatch(setError(null));
+    dispatch(setCurrentChat(null));
   }
 
   return {
@@ -195,5 +161,5 @@ export const useChat = () => {
     selectChat,
     startNewChat,
     sendMessage: sendCurrentMessage,
-  }
+  };
 };

@@ -15,8 +15,6 @@ const Register = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Registration data:", formData);
-    // Handle registration logic here
   };
 
   return (
