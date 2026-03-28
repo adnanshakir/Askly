@@ -6,6 +6,20 @@ const buildMessage = (message) => ({
   sender: message?.sender ?? message?.role ?? "assistant",
 });
 
+const sortPinnedChatsFirst = (chats) => {
+  const safeChats = Array.isArray(chats) ? chats : [];
+  const byRecent = (a, b) =>
+    Number(b?.lastUpdated ?? 0) - Number(a?.lastUpdated ?? 0);
+
+  const pinned = safeChats
+    .filter((chat) => Boolean(chat?.pinned))
+    .sort(byRecent);
+  const unpinned = safeChats
+    .filter((chat) => !chat?.pinned)
+    .sort(byRecent);
+  return [...pinned, ...unpinned];
+};
+
 const chatSlice = createSlice({
   name: "chat",
   initialState: {
@@ -16,11 +30,7 @@ const chatSlice = createSlice({
   },
   reducers: {
     setChats(state, action) {
-      state.chats = Array.isArray(action.payload) ? action.payload : [];
-
-      if (!state.currentChatId && state.chats.length > 0) {
-        state.currentChatId = state.chats[0].id;
-      }
+      state.chats = sortPinnedChatsFirst(action.payload);
     },
     setCurrentChat(state, action) {
       state.currentChatId = action.payload ?? null;
@@ -31,6 +41,8 @@ const chatSlice = createSlice({
       const newChat = {
         id,
         title,
+        pinned: Boolean(action.payload?.pinned),
+        lastUpdated: Number(action.payload?.lastUpdated ?? Date.now()),
         messages: [],
       };
 
@@ -50,9 +62,12 @@ const chatSlice = createSlice({
         state.chats.unshift({
           id: targetChatId,
           title: "New Chat",
+          pinned: false,
+          lastUpdated: Date.now(),
           messages: [buildMessage(message)],
         });
         state.currentChatId = targetChatId;
+        state.chats = sortPinnedChatsFirst(state.chats);
         return;
       }
 
@@ -61,6 +76,8 @@ const chatSlice = createSlice({
       }
 
       existingChat.messages.push(buildMessage(message));
+      existingChat.lastUpdated = Date.now();
+      state.chats = sortPinnedChatsFirst(state.chats);
     },
     setChatMessages(state, action) {
       const { chatId, messages } = action.payload ?? {};
@@ -69,15 +86,54 @@ const chatSlice = createSlice({
       const existingChat = state.chats.find((chat) => chat.id === chatId);
       if (!existingChat) return;
 
-      existingChat.messages = Array.isArray(messages)
+      const previousCount = Array.isArray(existingChat.messages)
+        ? existingChat.messages.length
+        : 0;
+      const nextMessages = Array.isArray(messages)
         ? messages.map((message) => buildMessage(message))
         : [];
+
+      existingChat.messages = nextMessages;
+
+      if (nextMessages.length > previousCount) {
+        existingChat.lastUpdated = Date.now();
+      } else if (!existingChat.lastUpdated) {
+        existingChat.lastUpdated = Date.now();
+      }
+
+      state.chats = sortPinnedChatsFirst(state.chats);
     },
     setLoading(state, action) {
       state.isLoading = Boolean(action.payload);
     },
     setError(state, action) {
       state.error = action.payload ?? null;
+    },
+    removeChat(state, action) {
+      const chatId = action.payload;
+      if (!chatId) return;
+
+      state.chats = state.chats.filter((chat) => chat.id !== chatId);
+
+      if (state.currentChatId === chatId) {
+        state.currentChatId = null;
+      }
+    },
+    togglePinChat(state, action) {
+      const chatId = action.payload;
+      if (!chatId) return;
+
+      const targetChat = state.chats.find((chat) => chat.id === chatId);
+      if (!targetChat) return;
+
+      targetChat.pinned = !Boolean(targetChat.pinned);
+      state.chats = sortPinnedChatsFirst(state.chats);
+    },
+    resetChatState(state) {
+      state.chats = [];
+      state.currentChatId = null;
+      state.isLoading = false;
+      state.error = null;
     },
   },
 });
@@ -90,6 +146,9 @@ export const {
   setChatMessages,
   setLoading,
   setError,
+  removeChat,
+  togglePinChat,
+  resetChatState,
 } = chatSlice.actions;
 
 export const setCurrentChatId = setCurrentChat;

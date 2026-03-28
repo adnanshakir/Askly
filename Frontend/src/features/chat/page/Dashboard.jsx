@@ -3,13 +3,19 @@ import { Menu, Ghost } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import ChatArea from "../components/ChatArea";
 import ChatInput from "../components/ChatInput";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useChat } from "../hooks/useChat";
+import { logout as logoutRequest } from "../../auth/service/auth.api";
+import { logout as logoutAction } from "../../auth/auth.slice";
+import { resetChatState } from "../chat.slice";
+import { useNavigate } from "react-router";
 
 
 const Dashboard = () => {
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const chat = useChat();
 
@@ -22,6 +28,7 @@ const Dashboard = () => {
     const activeChat = safeChats.find((item) => item.id === currentChatId);
     return Array.isArray(activeChat?.messages) ? activeChat.messages : [];
   }, [safeChats, currentChatId]);
+  const showEmptyState = !currentChatId || currentMessages.length === 0;
 
   useEffect(() => {
     chat.loadChats();
@@ -40,6 +47,28 @@ const Dashboard = () => {
     setIsMobileOpen(false);
   }
 
+  async function handleDeleteChat(chatId) {
+    await chat.deleteChat(chatId);
+  }
+
+  function handlePinChat(chatId) {
+    chat.pinChat(chatId);
+  }
+
+  async function handleLogout() {
+    try {
+      await logoutRequest();
+    } catch {
+      // continue local cleanup even if network request fails
+    } finally {
+      dispatch(logoutAction());
+      dispatch(resetChatState());
+      localStorage.clear();
+      sessionStorage.clear();
+      navigate("/login", { replace: true });
+    }
+  }
+
   return (
     <main className="relative flex h-screen w-full overflow-hidden bg-(--bg) text-(--text)">
       <Sidebar
@@ -49,9 +78,11 @@ const Dashboard = () => {
         isMobileOpen={isMobileOpen}
         onNewChat={handleNewChat}
         onSelectChat={handleSelectChat}
+        onDeleteChat={handleDeleteChat}
+        onPinChat={handlePinChat}
         onToggleDesktop={() => setIsDesktopCollapsed((prev) => !prev)}
         onCloseMobile={() => setIsMobileOpen(false)}
-        onLogout={() => {}}
+        onLogout={handleLogout}
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -83,11 +114,27 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <ChatArea messages={currentMessages} />
-        <ChatInput
-          onSend={handleSendMessage}
-          disabled={isLoading}
-        />
+        {showEmptyState ? (
+          <section className="flex min-h-0 flex-1 items-center justify-center px-4 py-8 md:px-6">
+            <div className="w-full max-w-3xl">
+              <div className="mb-8 text-center">
+                <h1 className="text-3xl font-semibold text-(--text) md:text-5xl">
+                  Askly
+                </h1>
+              </div>
+
+              <ChatInput onSend={handleSendMessage} disabled={isLoading} centered />
+            </div>
+          </section>
+        ) : (
+          <>
+            <ChatArea messages={currentMessages} isLoading={isLoading} />
+            <ChatInput
+              onSend={handleSendMessage}
+              disabled={isLoading}
+            />
+          </>
+        )}
       </div>
     </main>
   );

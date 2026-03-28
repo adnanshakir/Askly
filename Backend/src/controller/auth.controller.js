@@ -193,3 +193,21 @@ export async function getMe(req, res) {
     });
   }
 }
+
+/**
+ * @desc Logout user and clear JWT cookie
+ * @route POST /auth/logout
+ * @access Private/Public (cookie-based)
+ */
+export async function logout(req, res) {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  return res.status(200).json({
+    message: "Logout successful",
+    success: true,
+  });
+}

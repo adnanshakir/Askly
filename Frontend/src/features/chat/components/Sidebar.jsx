@@ -1,10 +1,13 @@
 import {
   LogOut,
-  MessageSquare,
+  MoreHorizontal,
   PanelLeft,
   PanelRight,
+  Pin,
+  Trash,
   X,
 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const Sidebar = ({
   chats = [],
@@ -13,17 +16,44 @@ const Sidebar = ({
   isMobileOpen,
   onNewChat,
   onSelectChat,
+  onDeleteChat,
+  onPinChat,
   onToggleDesktop,
   onCloseMobile,
   onLogout,
 }) => {
   const showCollapsedDesktop = isDesktopCollapsed && !isMobileOpen;
   const safeChats = Array.isArray(chats) ? chats : [];
+  const orderedChats = useMemo(() => {
+    const byRecent = (a, b) =>
+      Number(b?.lastUpdated ?? 0) - Number(a?.lastUpdated ?? 0);
+    const pinned = safeChats.filter((chat) => Boolean(chat?.pinned)).sort(byRecent);
+    const unpinned = safeChats.filter((chat) => !chat?.pinned).sort(byRecent);
+    return [...pinned, ...unpinned];
+  }, [safeChats]);
+  const [openMenuChatId, setOpenMenuChatId] = useState(null);
+  const listRef = useRef(null);
+
+  const cleanTitle = (title) =>
+    String(title ?? "").replace(/^"(.*)"$/, "$1");
+
+  useEffect(() => {
+    function handleOutsideMouseDown(event) {
+      if (!listRef.current?.contains(event.target)) {
+        setOpenMenuChatId(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideMouseDown);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideMouseDown);
+    };
+  }, []);
 
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex h-full flex-col border-r border-(--border)/40 bg-(--card)/80 backdrop-blur-md transition-all duration-300 ease-out md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex h-full flex-col bg-(--card)/80 backdrop-blur-md transition-all duration-300 ease-out md:static md:translate-x-0 ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         } ${isDesktopCollapsed ? "md:w-14" : "md:w-72"} w-72`}
       >
@@ -73,7 +103,7 @@ const Sidebar = ({
                   onNewChat?.();
                   onCloseMobile();
                 }}
-                className="mb-3 w-full rounded-xl bg-(--accent) px-3 py-2 text-sm text-white transition-opacity hover:opacity-90"
+                className="mb-3 w-full rounded-xl bg-(--input) px-3 py-2 text-sm text-(--text) transition-colors hover:bg-(--surface-glow)"
               >
                 + New Chat
               </button>
@@ -83,34 +113,92 @@ const Sidebar = ({
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-2 pb-6">
-              {safeChats.length === 0 ? (
+            <div ref={listRef} className="flex-1 overflow-y-auto px-2 pb-6">
+              {orderedChats.length === 0 ? (
                 <p className="px-2 text-sm text-(--text-secondary)">
                   Start a new conversation.
                 </p>
               ) : (
-                <ul className="space-y-3">
-                  {safeChats.map((chat) => {
+                <ul className="space-y-1">
+                  {orderedChats.map((chat) => {
                   const isActive = chat.id === activeChatId;
 
                   return (
                     <li key={chat.id}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onSelectChat?.(chat.id);
-                          onCloseMobile();
-                        }}
-                        className={`flex w-full items-center justify-start gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors duration-200 ${
-                          isActive
-                            ? "bg-(--surface-glow) text-(--text)"
-                            : "text-(--text-secondary) hover:bg-(--surface-glow) hover:text-(--text)"
-                        }`}
-                        title={chat.title}
-                      >
-                        <MessageSquare size={16} className="shrink-0" />
-                        <span className="block truncate">{chat.title}</span>
-                      </button>
+                      <div className="group relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onSelectChat?.(chat.id);
+                            onCloseMobile();
+                            setOpenMenuChatId(null);
+                          }}
+                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ${
+                            isActive
+                              ? "bg-(--surface-glow) text-(--text)"
+                              : "text-(--text-secondary) hover:bg-(--surface-glow) hover:text-(--text)"
+                          }`}
+                          title={cleanTitle(chat.title)}
+                        >
+                          <span className="block min-w-0 flex-1 truncate pr-2">
+                            {cleanTitle(chat.title)}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setOpenMenuChatId((prev) => (prev === chat.id ? null : chat.id));
+                          }}
+                          className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-(--text-secondary) opacity-0 transition-all hover:bg-(--surface-glow) hover:text-(--text) group-hover:opacity-100"
+                          aria-label="Open chat menu"
+                        >
+                          <MoreHorizontal size={14} />
+                        </button>
+
+                        {chat.pinned ? (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onPinChat?.(chat.id);
+                              setOpenMenuChatId(null);
+                            }}
+                            className="absolute right-10 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-(--text) opacity-100 transition-all hover:bg-(--surface-glow)"
+                            aria-label="Unpin chat"
+                          >
+                            <Pin size={14} />
+                          </button>
+                        ) : null}
+
+                        {openMenuChatId === chat.id ? (
+                          <div className="absolute right-2 top-[calc(100%+4px)] z-20 min-w-36 rounded-md bg-(--card) p-1 text-(--text) opacity-100 shadow-(--shadow-glow) transition-all duration-150">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onPinChat?.(chat.id);
+                                setOpenMenuChatId(null);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-(--surface-glow)"
+                            >
+                              <Pin size={14} />
+                              <span>{chat.pinned ? "Unpin Chat" : "Pin Chat"}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await onDeleteChat?.(chat.id);
+                                setOpenMenuChatId(null);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
+                            >
+                              <Trash size={14} />
+                              <span>Delete Chat</span>
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </li>
                   );
                   })}
@@ -122,7 +210,7 @@ const Sidebar = ({
               <button
                 type="button"
                 onClick={onLogout}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-(--accent) px-3 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-(--input) px-3 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
               >
                 <LogOut size={16} />
                 <span>Logout</span>

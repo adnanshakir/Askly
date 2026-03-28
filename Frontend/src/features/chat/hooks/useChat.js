@@ -1,13 +1,19 @@
 import { initializeSocketConnection } from "../services/chat.socket";
-import { sendMessage, getChats, getMessages } from "../services/chat.api";
 import {
-  addMessage,
+  sendMessage,
+  getChats,
+  getMessages,
+  deleteChat as deleteChatRequest,
+} from "../services/chat.api";
+import {
   createChat,
   setChats,
   setChatMessages,
   setCurrentChat,
   setLoading,
   setError,
+  removeChat,
+  togglePinChat,
 } from "../chat.slice";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -25,6 +31,12 @@ export const useChat = () => {
   const normalizeChat = (chat, index) => ({
     id: chat?.id ?? chat?._id ?? `chat-${Date.now()}-${index}`,
     title: chat?.title ?? `Chat ${index + 1}`,
+    pinned: Boolean(chat?.pinned),
+    lastUpdated: Number(
+      chat?.lastUpdated ??
+        (chat?.updatedAt ? new Date(chat.updatedAt).getTime() : 0) ??
+        Date.now(),
+    ),
     messages: Array.isArray(chat?.messages)
       ? chat.messages.map((msg) => normalizeMessage(msg))
       : [],
@@ -46,25 +58,6 @@ export const useChat = () => {
         normalizeChat(chat, index),
       );
       dispatch(setChats(normalizedChats));
-
-      if (normalizedChats.length > 0) {
-        const firstChatId = normalizedChats[0].id;
-        const messageData = await getMessages(firstChatId);
-        const rawMessages = Array.isArray(messageData)
-          ? messageData
-          : Array.isArray(messageData?.messages)
-            ? messageData.messages
-            : [];
-
-        dispatch(
-          setChatMessages({
-            chatId: firstChatId,
-            messages: rawMessages.map((message) =>
-              normalizeMessage(message, "assistant"),
-            ),
-          }),
-        );
-      }
     } catch (error) {
       dispatch(setError(error?.message ?? "Unable to load chats"));
       dispatch(setChats([]));
@@ -153,6 +146,32 @@ export const useChat = () => {
     dispatch(setCurrentChat(null));
   }
 
+  async function deleteChat(chatId) {
+    if (!chatId) return;
+
+    dispatch(setError(null));
+
+    try {
+      const result = await deleteChatRequest(chatId);
+      if (!result) {
+        throw new Error("Unable to delete chat");
+      }
+
+      dispatch(removeChat(chatId));
+
+      if (currentChatId === chatId) {
+        dispatch(setCurrentChat(null));
+      }
+    } catch (error) {
+      dispatch(setError(error?.message ?? "Unable to delete chat"));
+    }
+  }
+
+  function pinChat(chatId) {
+    if (!chatId) return;
+    dispatch(togglePinChat(chatId));
+  }
+
   return {
     chats,
     currentChatId,
@@ -161,5 +180,7 @@ export const useChat = () => {
     selectChat,
     startNewChat,
     sendMessage: sendCurrentMessage,
+    deleteChat,
+    pinChat,
   };
 };

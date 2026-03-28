@@ -31,3 +31,12 @@ export async function getMe(){
         throw error.response ? error.response.data : new Error("Network error");
     }
 }
+
+export async function logout() {
+    try {
+        const response = await api.post("/logout");
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error("Network error");
+    }
+}
