@@ -73,16 +73,11 @@ const ChatArea = ({ messages = [], isLoading = false }) => {
                       ? "bg-(--accent) rounded-br-none rounded-xl text-white text-sm"
                       : "text-(--text)/90 leading-relaxed tracking-[0.01em] text-base"
                   }`}
-                  style={
-                    message.sender === "user"
-                      ? undefined
-                      : { fontFamily: "Inter, system-ui, sans-serif" }
-                  }
                 >
                   {message.sender === "user" ? (
                     message.content
                   ) : (
-                    <div className="markdown-body wrap-break-word font-[Inter] leading-relaxed tracking-[0.01em] [&_*]:font-[Inter] [&_a]:underline [&_code]:rounded [&_code]:bg-(--input) [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-(--input) [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-medium">
+                    <div className="markdown-body wrap-break-word text-(--text)/90 leading-relaxed tracking-[0.01em] text-[15px] md:text-[16px] font-normal font-sans [&_*]:font-sans [&_strong]:font-medium [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_code]:rounded [&_code]:bg-(--input) [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-(--input) [&_pre]:p-3 [&_a]:underline">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {message.content ?? ""}
                       </ReactMarkdown>
