@@ -59,7 +59,7 @@ const ChatArea = ({ messages = [], isLoading = false }) => {
             </p>
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-4xl flex-col gap-y-8">
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-y-10">
             {safeMessages.map((message, index) => (
               <div
                 key={message.id ?? `${message.sender}-${index}`}
@@ -77,10 +77,12 @@ const ChatArea = ({ messages = [], isLoading = false }) => {
                   {message.sender === "user" ? (
                     message.content
                   ) : (
-                    <div className="markdown-body wrap-break-word text-(--text)/90 leading-relaxed tracking-[0.01em] text-[15px] md:text-[16px] font-normal font-sans [&_*]:font-sans [&_strong]:font-medium [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_code]:rounded [&_code]:bg-(--input) [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-(--input) [&_pre]:p-3 [&_a]:underline">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.content ?? ""}
-                      </ReactMarkdown>
+                    <div className="max-w-[65ch] px-4 py-3">
+                      <div className="markdown-body text-(--text)/90 text-[15px] leading-7 space-y-4 md:text-[16px] [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:mt-6 [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mt-5 [&_h3]:mb-1 [&_h3]:text-base [&_h3]:font-semibold [&_p]:mb-3 [&_ul]:my-3 [&_ul]:space-y-1 [&_ul]:pl-5 [&_ol]:my-3 [&_ol]:space-y-1 [&_ol]:pl-5 [&_li]:mb-1.5 [&_li]:leading-6 [&_strong]:font-semibold [&_strong]:text-(--text) [&_code]:rounded [&_code]:bg-(--input) [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-(--input) [&_pre]:p-3 [&_hr]:my-4 [&_hr]:border-(--border)">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content ?? ""}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   )}
 

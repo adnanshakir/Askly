@@ -196,6 +196,30 @@ IMPORTANT:
 - Do NOT hallucinate or guess
 - If WEB RESULTS are empty, say you don't have recent info
 
+Format your response for readability:
+- Use short paragraphs (max 2 lines)
+- Use bullet points instead of long text
+- Add spacing between sections
+- Use clear section headings using "###"
+- Avoid large dense blocks of text
+- Keep sentences concise
+
+Use this structure:
+### Section Title
+- Point 1
+- Point 2
+- Point 3
+
+### Another Section
+- Point 1
+- Point 2
+
+Avoid:
+- Long paragraphs
+- Repetitive text
+- Over-explanation
+- Unstructured dumps
+
 Answer ONLY using the information below.
 
 [WEB RESULTS]
@@ -333,7 +357,7 @@ export async function generateResponse(messages) {
         const retryMessages = [
           {
             role: "system",
-            content: "Answer ONLY using WEB RESULTS. Do NOT use prior knowledge.",
+            content: "Answer ONLY using WEB RESULTS. Do NOT use prior knowledge. Format with ### headings, short bullet points, clear spacing, and concise sentences. Avoid long paragraphs and unstructured text.",
           },
           webSystemMessage,
           { role: "user", content: query },
