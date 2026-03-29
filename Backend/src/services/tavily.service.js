@@ -10,23 +10,26 @@ function getTavilyClient() {
   return Tavily({ apiKey });
 }
 
-export const searchInternet = async ({ query }) => {
+export const searchInternet = async ({ query, max_results = 5 }) => {
   try {
     const cleanQuery = query?.trim();
 
     if (!cleanQuery) {
       console.warn("[searchInternet] Missing query");
-      return "No search query provided.";
+      return null;
     }
 
     console.log("[searchInternet] Invoked", { query: cleanQuery });
 
     const tavily = getTavilyClient();
-    const response = await tavily.search({
-      query: cleanQuery,
-      max_results: 5,
-      search_depth: "advanced",
+    console.log("=== CALLING TAVILY ===");
+    const response = await tavily.search(cleanQuery, {
+      maxResults: max_results,
     });
+
+    console.log("=== RAW TAVILY RESPONSE ===");
+    console.log(JSON.stringify(response, null, 2));
+    console.log("Tavily results count:", response?.results?.length);
 
     console.log("[searchInternet] Raw Tavily response", {
       hasResults: Array.isArray(response?.results),
@@ -34,31 +37,14 @@ export const searchInternet = async ({ query }) => {
       keys: response ? Object.keys(response) : [],
     });
 
-    const resultText = Array.isArray(response?.results)
-      ? response.results
-          .map((result, index) => {
-            const title = result?.title || `Result ${index + 1}`;
-            const content = result?.content || "No content available.";
-            const url = result?.url ? `\nSource: ${result.url}` : "";
-            return `${title}\n${content}${url}`;
-          })
-          .join("\n\n")
-      : "";
-
-    if (resultText) {
-      return resultText;
+    if (!response || !response.results || response.results.length === 0) {
+      return null;
     }
 
-    if (typeof response?.answer === "string" && response.answer.trim()) {
-      return response.answer;
-    }
-
-    return "No relevant internet results found.";
+    return response;
   } catch (error) {
-    console.error("[searchInternet] Error", {
-      message: error?.message,
-      stack: error?.stack,
-    });
-    return "Internet search is temporarily unavailable.";
+    console.log("=== TAVILY ERROR ===", error.message);
+    console.error("Tavily error:", error.message);
+    return null;
   }
 };

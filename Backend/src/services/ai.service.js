@@ -5,7 +5,7 @@ import { HumanMessage, SystemMessage, AIMessage } from "langchain";
 import { searchInternet } from "./tavily.service.js";
 
 const FALLBACK_RESPONSE = "I could not generate a response right now. Please try again.";
-const WEB_SEARCH_KEYWORDS = /\b(latest|news|today|current|recent)\b/i;
+const MODEL_TEMPERATURE = 0.2;
 
 function getGeminiModel() {
   if (!process.env.GEMINI_API_KEY) {
@@ -16,6 +16,7 @@ function getGeminiModel() {
   return new ChatGoogleGenerativeAI({
     model: "gemini-2.5-flash-lite",
     apiKey: process.env.GEMINI_API_KEY,
+    temperature: MODEL_TEMPERATURE,
     maxRetries: 0,
   });
 }
@@ -29,6 +30,7 @@ function getMistralModel() {
   return new ChatMistralAI({
     model: "mistral-small-latest",
     apiKey: process.env.MISTRAL_API_KEY,
+    temperature: MODEL_TEMPERATURE,
     maxRetries: 0,
   });
 }
@@ -42,6 +44,7 @@ function getOpenRouterModel() {
   return new ChatOpenAI({
     model: process.env.OPENROUTER_MODEL || "openrouter/auto",
     apiKey: process.env.OPENROUTER_API_KEY,
+    temperature: MODEL_TEMPERATURE,
     configuration: {
       baseURL: "https://openrouter.ai/api/v1",
     },
@@ -122,7 +125,26 @@ function getLatestUserQuery(messages) {
 
 function needsWebSearch(query) {
   if (!query) return false;
-  return WEB_SEARCH_KEYWORDS.test(query);
+
+  const q = query.toLowerCase();
+
+  const isTimeSensitive =
+    /latest|news|today|current|recent/.test(q) ||
+    /last\s*\d+\s*(hour|hours|day|days)/.test(q) ||
+    /what happened|right now|breaking/.test(q);
+
+  const isFactualLookup =
+    /tell me about|what is|who is|info about|details about/.test(q);
+
+  const isStatic =
+    /^[\d+\-*/().\s]+$/.test(q) ||
+    /react|javascript|code|function|api/.test(q);
+
+  const isShortQuery = q.trim().split(/\s+/).length <= 2;
+
+  if (isStatic) return false;
+
+  return isTimeSensitive || (isFactualLookup && !isShortQuery);
 }
 
 async function buildMessagesWithOptionalWebContext(messages) {
@@ -134,17 +156,77 @@ async function buildMessagesWithOptionalWebContext(messages) {
     : [];
 
   const query = getLatestUserQuery(baseMessages);
+  const shouldSearch = needsWebSearch(query);
 
-  if (needsWebSearch(query)) {
+  console.log("=== WEB TRIGGER ===");
+  console.log("Query:", query);
+  console.log("shouldSearch:", shouldSearch);
+  console.log("Web decision:", shouldSearch, "| Query:", query);
+
+  let web = null;
+  let webSystemMessage = null;
+
+  if (shouldSearch) {
     console.log("[generateResponse] Web search triggered", { query });
     try {
-      const webResults = await searchInternet({ query });
-      if (typeof webResults === "string" && webResults.trim()) {
-        baseMessages.unshift({
-          role: "system",
-          content: `[Web Results]\n${webResults}`,
-        });
+      const tavilyResponse = await searchInternet({
+        query: query,
+        max_results: 5,
+      });
+
+      if (tavilyResponse?.results && tavilyResponse.results.length > 0) {
+        web = tavilyResponse.results
+          .slice(0, 5)
+          .map((r) => `• ${r?.title || "Untitled"}\n${r?.content || ""}`)
+          .join("\n\n");
       }
+
+      console.log("Web data exists:", !!web);
+      console.log("Web length:", web?.length || 0);
+
+      if (web && web.trim()) {
+        webSystemMessage = {
+          role: "system",
+          content: `
+You are a real-time assistant.
+
+IMPORTANT:
+- You MUST use the provided WEB RESULTS to answer
+- Do NOT rely on your internal knowledge if WEB RESULTS are present
+- Do NOT hallucinate or guess
+- If WEB RESULTS are empty, say you don't have recent info
+
+Answer ONLY using the information below.
+
+[WEB RESULTS]
+${web}
+`,
+        };
+
+        const conversationMessages = baseMessages.filter((m) => m.role !== "system");
+        const withWebMessages = [
+          webSystemMessage,
+          ...conversationMessages,
+        ];
+
+        baseMessages.length = 0;
+        baseMessages.push(...withWebMessages);
+      }
+
+      console.log("=== FINAL MESSAGES ===");
+      console.log(
+        baseMessages.map((m, i) => ({
+          index: i,
+          role: m.role,
+          preview: m.content?.slice(0, 100),
+        })),
+      );
+      console.log("Has system message:", baseMessages.some((m) => m.role === "system"));
+      console.log("System at index 0:", baseMessages[0]?.role === "system");
+      console.log(
+        "Index 0 has [Web Results]:",
+        typeof baseMessages[0]?.content === "string" && baseMessages[0].content.includes("[Web Results]"),
+      );
     } catch (error) {
       console.error("[generateResponse] Web search failed, continuing without web context", {
         message: error?.message,
@@ -153,9 +235,45 @@ async function buildMessagesWithOptionalWebContext(messages) {
     }
   } else {
     console.log("[generateResponse] Web search skipped", { query });
+    console.log("Web data exists:", false);
+    console.log("Web length:", 0);
+    console.log("=== FINAL MESSAGES ===");
+    console.log(
+      baseMessages.map((m, i) => ({
+        index: i,
+        role: m.role,
+        preview: m.content?.slice(0, 100),
+      })),
+    );
+    console.log("Has system message:", baseMessages.some((m) => m.role === "system"));
+    console.log("System at index 0:", baseMessages[0]?.role === "system");
+    console.log(
+      "Index 0 has [Web Results]:",
+      typeof baseMessages[0]?.content === "string" && baseMessages[0].content.includes("[Web Results]"),
+    );
   }
 
-  return baseMessages.map((message) => toLangChainMessage(message));
+  return {
+    normalizedMessages: baseMessages.map((message) => toLangChainMessage(message)),
+    web,
+    query,
+    webSystemMessage,
+  };
+}
+
+function shouldRetryWithWebConstraint(responseText, web) {
+  if (!web || typeof responseText !== "string") {
+    return false;
+  }
+
+  const lower = responseText.toLowerCase();
+  return (
+    lower.includes("cannot provide") ||
+    lower.includes("as of") ||
+    lower.includes("i don't have real-time") ||
+    lower.includes("2024") ||
+    lower.includes("2025")
+  );
 }
 
 async function tryModel(model, messages, label) {
@@ -166,6 +284,9 @@ async function tryModel(model, messages, label) {
   const start = Date.now();
 
   try {
+    console.log("=== INVOKING MODEL ===");
+    console.log("Message count:", messages.length);
+    console.log("First message role:", messages[0]?.role);
     console.log(`[tryModel:${label}] Invoking model`, {
       messageCount: messages.length,
     });
@@ -197,7 +318,7 @@ async function tryModel(model, messages, label) {
 }
 
 export async function generateResponse(messages) {
-  const normalizedMessages = await buildMessagesWithOptionalWebContext(messages);
+  const { normalizedMessages, web, query, webSystemMessage } = await buildMessagesWithOptionalWebContext(messages);
 
   const modelChain = [
     { label: "gemini", model: getGeminiModel() },
@@ -208,6 +329,22 @@ export async function generateResponse(messages) {
   for (const entry of modelChain) {
     const answer = await tryModel(entry.model, normalizedMessages, entry.label);
     if (answer) {
+      if (shouldRetryWithWebConstraint(answer, web) && query && webSystemMessage) {
+        const retryMessages = [
+          {
+            role: "system",
+            content: "Answer ONLY using WEB RESULTS. Do NOT use prior knowledge.",
+          },
+          webSystemMessage,
+          { role: "user", content: query },
+        ].map((message) => toLangChainMessage(message));
+
+        const retryAnswer = await tryModel(entry.model, retryMessages, `${entry.label}:web-retry`);
+        if (retryAnswer) {
+          return retryAnswer;
+        }
+      }
+
       return answer;
     }
   }
