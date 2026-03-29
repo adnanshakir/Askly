@@ -3,6 +3,7 @@ import {
   MoreHorizontal,
   PanelLeft,
   PanelRight,
+  PenSquare,
   Pin,
   Trash,
   X,
@@ -55,10 +56,10 @@ const Sidebar = ({
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex h-full flex-col bg-(--card)/80 backdrop-blur-md transition-all duration-300 ease-out md:static md:translate-x-0 ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
-        } ${isDesktopCollapsed ? "md:w-14" : "md:w-72"} w-72`}
+        } ${isDesktopCollapsed ? "md:w-12" : "md:w-60"} w-60`}
       >
         {showCollapsedDesktop ? (
-          <div className="hidden md:flex md:items-start md:justify-center md:px-2 md:pt-4">
+          <div className="hidden md:flex md:flex-col md:items-center md:justify-start md:gap-2 md:px-2 md:pt-4">
             <button
               type="button"
               onClick={onToggleDesktop}
@@ -66,6 +67,19 @@ const Sidebar = ({
               aria-label="Toggle sidebar"
             >
               <PanelRight size={18} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onNewChat?.();
+                onCloseMobile?.();
+              }}
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-(--text-secondary) hover:bg-(--surface-glow) hover:text-(--text)"
+              aria-label="New chat"
+              title="New chat"
+            >
+              <PenSquare size={18} />
             </button>
           </div>
         ) : (
@@ -101,11 +115,12 @@ const Sidebar = ({
                 type="button"
                 onClick={() => {
                   onNewChat?.();
-                  onCloseMobile();
+                  onCloseMobile?.();
                 }}
-                className="mb-3 w-full rounded-xl bg-(--input) px-3 py-2 text-sm text-(--text) transition-colors hover:bg-(--surface-glow)"
+                className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-(--input) px-3 py-2 text-sm text-(--text) transition-colors hover:bg-(--surface-glow)"
               >
-                + New Chat
+                <PenSquare size={16} />
+                <span>New Chat</span>
               </button>
 
               <p className="text-xs font-medium uppercase tracking-wide text-(--text-secondary)">

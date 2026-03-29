@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Menu, Ghost } from "lucide-react";
+import { Menu, Ghost, PenSquare } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import ChatArea from "../components/ChatArea";
 import ChatInput from "../components/ChatInput";
@@ -84,6 +84,17 @@ const Dashboard = () => {
         onCloseMobile={() => setIsMobileOpen(false)}
         onLogout={handleLogout}
       />
+
+      {!isMobileOpen && (
+        <button
+          type="button"
+          onClick={handleNewChat}
+          className="fixed bottom-20 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-(--accent) text-white shadow-lg transition-transform active:scale-95 md:hidden"
+          aria-label="New chat"
+        >
+          <PenSquare size={20} />
+        </button>
+      )}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div className="sticky top-0 z-20 flex h-14 items-center justify-between bg-(--bg)/80 px-4 backdrop-blur md:px-6">
